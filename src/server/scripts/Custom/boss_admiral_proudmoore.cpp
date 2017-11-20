@@ -109,6 +109,7 @@ public:
                 */
                 me->SummonCreature(NPC_WATER_ELEMENTAL, me->GetHomePosition(), TEMPSUMMON_CORPSE_DESPAWN);
                 me->Yell("First Phase completed.", LANG_UNIVERSAL, NULL);
+                me->Yell("Hello", LANG_UNIVERSAL, NULL);
             }
 
             if (events.IsInPhase(PHASE_TWO) && HealthBelowPct(30))
