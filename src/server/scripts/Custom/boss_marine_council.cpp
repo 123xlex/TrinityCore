@@ -1,6 +1,4 @@
 /*
-    mage/infantry/siegemaster
-
 	siegemaster:
     inactive: bombards one part of the area( announce with flare) - constant spawn points (quadrants) spawn visuals around there, invis stalkers do explosions - randomize which quadrants
 	active: snipe a target/flamethrower(cone if front of boss)
@@ -17,6 +15,7 @@
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "InstanceScript.h"
+#include "MotionMaster.h"
 #include "Spell.h"
 #include "SpellMgr.h"
 #include "SpellAuras.h"
@@ -66,3 +65,4 @@ enum Events
     EVENT_SHIELD            = 11,
     EVENT_BERSERK           = 12
 };
+
