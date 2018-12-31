@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2017 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License as published by the
@@ -128,7 +128,7 @@ static uint32 GetRandomBossExcept(uint32 exception)
         if (data != exception)
             bossData.emplace_back(data);
 
-    return bossData[urand(0, 3)];
+    return Trinity::Containers::SelectRandomContainerElement(bossData);
 }
 
 struct boss_illidari_council : public BossAI
@@ -143,12 +143,12 @@ struct boss_illidari_council : public BossAI
         DoCastSelf(SPELL_EMPYREAL_BALANCE, true);
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         if (!_inCombat)
         {
             _inCombat = true;
-            _EnterCombat();
+            _JustEngagedWith();
             for (uint32 bossData : CouncilData)
             {
                 if (Creature* council = instance->GetCreature(bossData))
@@ -157,8 +157,8 @@ struct boss_illidari_council : public BossAI
                     DoZoneInCombat(council);
                 }
             }
-            events.ScheduleEvent(EVENT_EMPYREAL_EQUIVALENCY, Seconds(2));
-            events.ScheduleEvent(EVENT_BERSERK, Minutes(15));
+            events.ScheduleEvent(EVENT_EMPYREAL_EQUIVALENCY, 2s);
+            events.ScheduleEvent(EVENT_BERSERK, 15min);
             if (Creature* council = instance->GetCreature(CouncilData[urand(0, 3)]))
                 council->AI()->Talk(SAY_COUNCIL_AGRO);
         }
@@ -201,10 +201,10 @@ struct boss_illidari_council : public BossAI
         if (!UpdateVictim())
             return;
 
+        events.Update(diff);
+
         if (me->HasUnitState(UNIT_STATE_CASTING))
             return;
-
-        events.Update(diff);
 
         while (uint32 eventId = events.ExecuteEvent())
         {
@@ -251,7 +251,7 @@ struct IllidariCouncilBossAI : public BossAI
         events.Reset();
     }
 
-    void EnterCombat(Unit* /*who*/) override
+    void JustEngagedWith(Unit* /*who*/) override
     {
         me->SetCombatPulseDelay(5);
         me->setActive(true);
@@ -275,7 +275,7 @@ struct IllidariCouncilBossAI : public BossAI
 
     void DamageTaken(Unit* who, uint32 &damage) override
     {
-        if (damage >= me->GetHealth() && who->GetGUID() != me->GetGUID())
+        if (damage >= me->GetHealth() && (!who || who->GetGUID() != me->GetGUID()))
             damage = me->GetHealth() - 1;
     }
 
@@ -314,11 +314,11 @@ struct boss_gathios_the_shatterer : public IllidariCouncilBossAI
     void ScheduleEvents() override
     {
         DoCastSelf(SPELL_SEAL_OF_BLOOD);
-        events.ScheduleEvent(EVENT_BLESS, Seconds(20));
-        events.ScheduleEvent(EVENT_CONSECRATION, Seconds(10));
-        events.ScheduleEvent(EVENT_HAMMER_OF_JUSTICE, Seconds(10));
-        events.ScheduleEvent(EVENT_JUDGEMENT, Seconds(15));
-        events.ScheduleEvent(EVENT_AURA, Seconds(6));
+        events.ScheduleEvent(EVENT_BLESS, 20s);
+        events.ScheduleEvent(EVENT_CONSECRATION, 10s);
+        events.ScheduleEvent(EVENT_HAMMER_OF_JUSTICE, 10s);
+        events.ScheduleEvent(EVENT_JUDGEMENT, 15s);
+        events.ScheduleEvent(EVENT_AURA, 6s);
     }
 
     void ExecuteEvent(uint32 eventId) override
@@ -376,16 +376,16 @@ struct boss_high_nethermancer_zerevor : public IllidariCouncilBossAI
 
     void ScheduleEvents() override
     {
-        events.ScheduleEvent(EVENT_FLAMESTRIKE, Seconds(8));
-        events.ScheduleEvent(EVENT_BLIZZARD, Seconds(25));
-        events.ScheduleEvent(EVENT_ARCANE_EXPLOSION, Seconds(5));
+        events.ScheduleEvent(EVENT_FLAMESTRIKE, 8s);
+        events.ScheduleEvent(EVENT_BLIZZARD, 25s);
+        events.ScheduleEvent(EVENT_ARCANE_EXPLOSION, 5s);
         DoCastSelf(SPELL_DAMPEN_MAGIC);
     }
 
     void DoAction(int32 actionId) override
     {
         if (actionId == ACTION_REFRESH_DAMPEN)
-            events.ScheduleEvent(EVENT_DAMPEN_MAGIC, Seconds(50));
+            events.ScheduleEvent(EVENT_DAMPEN_MAGIC, 50s);
     }
     void ExecuteEvent(uint32 eventId) override
     {
@@ -410,7 +410,7 @@ struct boss_high_nethermancer_zerevor : public IllidariCouncilBossAI
                 {
                     DoCastSelf(SPELL_ARCANE_EXPLOSION);
                     _canUseArcaneExplosion = false;
-                    events.ScheduleEvent(EVENT_ARCANE_EXPLOSION_CHECK, Seconds(5));
+                    events.ScheduleEvent(EVENT_ARCANE_EXPLOSION_CHECK, 5s);
                 }
                 events.Repeat(Seconds(1));
                 break;
@@ -452,16 +452,15 @@ struct boss_lady_malande : public IllidariCouncilBossAI
 
     void ScheduleEvents() override
     {
-        events.ScheduleEvent(EVENT_CIRCLE_OF_HEALING, Seconds(20));
-        events.ScheduleEvent(EVENT_REFLECTIVE_SHIELD, Seconds(25));
-        events.ScheduleEvent(EVENT_DIVINE_WRATH, Seconds(32));
+        events.ScheduleEvent(EVENT_CIRCLE_OF_HEALING, 20s);
+        events.ScheduleEvent(EVENT_REFLECTIVE_SHIELD, 25s);
+        events.ScheduleEvent(EVENT_DIVINE_WRATH, 32s);
     }
 
     void HealReceived(Unit* /*who*/, uint32& addhealth) override
     {
         // Need be negative to heal trigger
-        int32 bp = addhealth * (-1);
-        me->CastCustomSpell(SPELL_SHARED_RULE, SPELLVALUE_BASE_POINT0, bp, (Unit*) nullptr, true);
+        me->CastSpell(nullptr, SPELL_SHARED_RULE, CastSpellExtraArgs(TRIGGERED_FULL_MASK).AddSpellBP0(-int32(addhealth)));
     }
 
     void ExecuteEvent(uint32 eventId) override
@@ -517,8 +516,8 @@ struct boss_veras_darkshadow : public IllidariCouncilBossAI
 
     void ScheduleEvents() override
     {
-        events.ScheduleEvent(EVENT_DEADLY_STRIKE, Seconds(18));
-        events.ScheduleEvent(EVENT_VANISH, Seconds(18));
+        events.ScheduleEvent(EVENT_DEADLY_STRIKE, 18s);
+        events.ScheduleEvent(EVENT_VANISH, 18s);
     }
 
     void ExecuteEvent(uint32 eventId) override
@@ -607,8 +606,7 @@ class spell_illidari_council_balance_of_power : public AuraScript
     void Absorb(AuraEffect* aurEff, DamageInfo& dmgInfo, uint32& /*absorbAmount*/)
     {
         PreventDefaultAction();
-        int32 bp = dmgInfo.GetDamage();
-        GetTarget()->CastCustomSpell(SPELL_SHARED_RULE, SPELLVALUE_BASE_POINT0, bp, (Unit*) nullptr, true, nullptr, aurEff);
+        GetTarget()->CastSpell(nullptr, SPELL_SHARED_RULE, CastSpellExtraArgs(aurEff).AddSpellBP0(dmgInfo.GetDamage()));
     }
 
     void Register() override
@@ -632,7 +630,7 @@ class spell_illidari_council_deadly_strike : public AuraScript
         PreventDefaultAction();
 
         if (Unit* victim = GetTarget()->GetAI()->SelectTarget(SELECT_TARGET_RANDOM, 0))
-            GetTarget()->CastSpell(victim, SPELL_DEADLY_POISON, true, nullptr, aurEff);
+            GetTarget()->CastSpell(victim, SPELL_DEADLY_POISON, aurEff);
     }
 
     void Register() override
@@ -679,8 +677,7 @@ class spell_illidari_council_reflective_shield : public AuraScript
         if (dmgInfo.GetAttacker() == target)
             return;
 
-        int32 bp = absorbAmount / 2;
-        target->CastCustomSpell(dmgInfo.GetAttacker(), SPELL_REFLECTIVE_SHIELD_DAMAGE, &bp, nullptr, nullptr, true, nullptr, aurEff);
+        target->CastSpell(dmgInfo.GetAttacker(), SPELL_REFLECTIVE_SHIELD_DAMAGE, CastSpellExtraArgs(aurEff).AddSpellBP0(absorbAmount/2));
     }
 
     void Register() override
