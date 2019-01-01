@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2008-2018 TrinityCore <https://www.trinitycore.org/>
+ * Copyright (C) 2008-2019 TrinityCore <https://www.trinitycore.org/>
  * Copyright (C) 2005-2009 MaNGOS <http://getmangos.com/>
  *
  * This program is free software; you can redistribute it and/or modify it
@@ -2876,6 +2876,13 @@ void SpellMgr::LoadSpellInfoCustomAttributes()
         }
 
         spellInfo->_InitializeExplicitTargetMask();
+
+        if (spellInfo->Speed > 0.0f)
+            if (SpellVisualEntry const* spellVisual = sSpellVisualStore.LookupEntry(spellInfo->SpellVisual[0]))
+                if (spellVisual->HasMissile)
+                    if (spellVisual->MissileModel == -4 || spellVisual->MissileModel == -5)
+                        spellInfo->AttributesCu |= SPELL_ATTR0_CU_NEEDS_AMMO_DATA;
+
     }
 
     // addition for binary spells, omit spells triggering other spells
