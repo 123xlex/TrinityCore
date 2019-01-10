@@ -43,7 +43,7 @@ class npc_multi_purpose : public CreatureScript
                 AddGossipItemFor(player, 0, "Naxxramas", GOSSIP_SENDER_MAIN, 6001);
                 AddGossipItemFor(player, 0, "Obsidian Sanctum", GOSSIP_SENDER_MAIN, 6002);
                 AddGossipItemFor(player, 0, "Eye of Eternity", GOSSIP_SENDER_MAIN, 6003);
-                AddGossipItemFor(player, 0, "Uluduar", GOSSIP_SENDER_MAIN, 6004);
+                AddGossipItemFor(player, 0, "Ulduar", GOSSIP_SENDER_MAIN, 6004);
                 AddGossipItemFor(player, 0, "Trial of the Crusader", GOSSIP_SENDER_MAIN, 6005);
                 AddGossipItemFor(player, 0, "Icecrown Citadel", GOSSIP_SENDER_MAIN, 6006);
                 AddGossipItemFor(player, 0, "Main Menu", GOSSIP_SENDER_MAIN, 6007);

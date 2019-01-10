@@ -75,7 +75,7 @@ public:
             _Reset();
         }
 
-        void EnterCombat(Unit*) override
+        void EnterCombat(Unit*)
         {
             events.SetPhase(PHASE_ONE);
             events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000);
