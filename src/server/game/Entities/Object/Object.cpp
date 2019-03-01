@@ -47,6 +47,16 @@
 #include "World.h"
 #include <G3D/Vector3.h>
 
+constexpr float VisibilityDistances[AsUnderlyingType(VisibilityDistanceType::Max)] =
+{
+    DEFAULT_VISIBILITY_DISTANCE,
+    VISIBILITY_DISTANCE_TINY,
+    VISIBILITY_DISTANCE_SMALL,
+    VISIBILITY_DISTANCE_LARGE,
+    VISIBILITY_DISTANCE_GIGANTIC,
+    MAX_VISIBILITY_DISTANCE
+};
+
 Object::Object() : m_PackGUID(sizeof(uint64)+1)
 {
     m_objectTypeId      = TYPEID_OBJECT;
@@ -1022,6 +1032,15 @@ void WorldObject::SetFarVisible(bool on)
     m_isFarVisible = on;
 }
 
+void WorldObject::SetVisibilityDistanceOverride(VisibilityDistanceType type)
+{
+    ASSERT(type < VisibilityDistanceType::Max);
+    if (GetTypeId() == TYPEID_PLAYER)
+        return;
+
+    m_visibilityDistanceOverride = VisibilityDistances[AsUnderlyingType(type)];
+}
+
 void WorldObject::CleanupsBeforeDelete(bool /*finalCleanup*/)
 {
     if (IsInWorld())
@@ -1459,7 +1478,9 @@ float WorldObject::GetGridActivationRange() const
 
 float WorldObject::GetVisibilityRange() const
 {
-    if (IsFarVisible() && !ToPlayer())
+    if (IsVisibilityOverridden() && !ToPlayer())
+        return *m_visibilityDistanceOverride;
+    else if (IsFarVisible() && !ToPlayer())
         return MAX_VISIBILITY_DISTANCE;
     else
         return GetMap()->GetVisibilityRange();
@@ -1471,7 +1492,9 @@ float WorldObject::GetSightRange(WorldObject const* target) const
     {
         if (ToPlayer())
         {
-            if (target && target->IsFarVisible() && !target->ToPlayer())
+            if (target && target->IsVisibilityOverridden() && !target->ToPlayer())
+                return *target->m_visibilityDistanceOverride;
+            else if (target && target->IsFarVisible() && !target->ToPlayer())
                 return MAX_VISIBILITY_DISTANCE;
             else if (ToPlayer()->GetCinematicMgr()->IsOnCinematic())
                 return DEFAULT_VISIBILITY_INSTANCE;
@@ -2539,9 +2562,9 @@ FactionTemplateEntry const* WorldObject::GetFactionTemplateEntry() const
         if (Player const* player = ToPlayer())
             TC_LOG_ERROR("entities", "Player %s has invalid faction (faction template id) #%u", player->GetName().c_str(), GetFaction());
         else if (Creature const* creature = ToCreature())
-            TC_LOG_ERROR("entities", "Creature (template id: %u) has invalid faction (faction template id) #%u", creature->GetCreatureTemplate()->Entry, GetFaction());
+            TC_LOG_ERROR("entities.unit.badfaction", "Creature (template id: %u) has invalid faction (faction template id) #%u", creature->GetCreatureTemplate()->Entry, GetFaction());
         else if (GameObject const* go = ToGameObject())
-            TC_LOG_ERROR("entities", "GameObject (template id: %u) has invalid faction (faction template id) #%u", go->GetGOInfo()->entry, GetFaction());
+            TC_LOG_ERROR("entities.gameobject.badfaction", "GameObject (template id: %u) has invalid faction (faction template id) #%u", go->GetGOInfo()->entry, GetFaction());
         else
             TC_LOG_ERROR("entities", "WorldObject (name: %s, type: %u) has invalid faction (faction template id) #%u", GetName().c_str(), uint32(GetTypeId()), GetFaction());
     }
@@ -3214,6 +3237,8 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
         destx, desty, destz + halfHeight,
         destx, desty, destz, -0.5f);
 
+    destz -= halfHeight;
+
     // collision occured
     if (col)
     {
@@ -3228,6 +3253,8 @@ void WorldObject::MovePositionToFirstCollision(Position &pos, float dist, float 
         pos.m_positionX, pos.m_positionY, pos.m_positionZ + halfHeight,
         destx, desty, destz + halfHeight,
         destx, desty, destz, -0.5f);
+
+    destz -= halfHeight;
 
     // Collided with a gameobject
     if (col)

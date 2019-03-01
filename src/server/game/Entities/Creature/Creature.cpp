@@ -611,13 +611,13 @@ bool Creature::UpdateEntry(uint32 entry, CreatureData const* data /*= nullptr*/,
 
     UpdateMovementFlags();
     LoadCreaturesAddon();
-  
+
     LoadTemplateImmunities();
     GetThreatManager().EvaluateSuppressed();
-  
+
     //We must update last scriptId or it looks like we reloaded a script, breaking some things such as gossip temporarily
     LastUsedScriptID = GetScriptId();
-  
+
     return true;
 }
 
@@ -949,7 +949,8 @@ void Creature::DoFleeToGetAssistance()
 
 bool Creature::AIM_Destroy()
 {
-    SetAI(nullptr);
+    PopAI();
+    RefreshAI();
     return true;
 }
 
@@ -1182,13 +1183,15 @@ bool Creature::isCanInteractWithBattleMaster(Player* player, bool msg) const
     return true;
 }
 
-bool Creature::CanResetTalents(Player* player) const
+bool Creature::CanResetTalents(Player* player, bool pet) const
 {
     Trainer::Trainer const* trainer = sObjectMgr->GetTrainer(GetEntry());
     if (!trainer)
         return false;
 
-    return player->getLevel() >= 10 && trainer->IsTrainerValidForPlayer(player);
+    return player->getLevel() >= 10 &&
+        (trainer->GetTrainerType() == (pet ? Trainer::Type::Pet : Trainer::Type::Class)) &&
+        trainer->IsTrainerValidForPlayer(player);
 }
 
 Player* Creature::GetLootRecipient() const
@@ -2261,7 +2264,12 @@ void Creature::CallForHelp(float radius)
         target = GetThreatManager().GetAnyTarget();
     if (!target)
         target = GetCombatManager().GetAnyTarget();
-    ASSERT(target, "Creature %u (%s) is engaged without threat list", GetEntry(), GetName().c_str());
+
+    if (!target)
+    {
+        TC_LOG_ERROR("entities.unit", "Creature %u (%s) is engaged without threat list", GetEntry(), GetName().c_str());
+        return;
+    }
 
     Trinity::CallOfHelpCreatureInRangeDo u_do(this, target, radius);
     Trinity::CreatureWorker<Trinity::CallOfHelpCreatureInRangeDo> worker(this, u_do);
@@ -2476,6 +2484,10 @@ bool Creature::LoadCreaturesAddon()
 
     if (cainfo->emote != 0)
         SetUInt32Value(UNIT_NPC_EMOTESTATE, cainfo->emote);
+
+    // Check if visibility distance different
+    if (cainfo->visibilityDistanceType != VisibilityDistanceType::Normal)
+        SetVisibilityDistanceOverride(cainfo->visibilityDistanceType);
 
     // Load Path
     if (cainfo->path_id != 0)
