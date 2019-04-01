@@ -3465,6 +3465,12 @@ void World::RemoveOldCorpses()
     m_timers[WUPDATE_CORPSES].SetCurrent(m_timers[WUPDATE_CORPSES].GetInterval());
 }
 
+// Testing to reduce View Distance for Boss Fights
+void World::NewMaxVisibleDistanceInInstances(/*uint32 timer, */ float newDistance)
+{
+    m_MaxVisibleDistanceOnContinents = newDistance;
+}
+
 Realm realm;
 
 CliCommandHolder::CliCommandHolder(void* callbackArg, char const* command, Print zprint, CommandFinished commandFinished)

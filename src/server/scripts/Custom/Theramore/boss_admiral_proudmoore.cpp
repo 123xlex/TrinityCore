@@ -1,6 +1,8 @@
 #include "ScriptMgr.h"
 #include "ScriptedCreature.h"
 #include "Unit.h"
+#include "World.h"
+#include "custom_instance.h"
 
 enum Npcs
 {
@@ -61,12 +63,16 @@ enum Phases
 
 class boss_admiral_proudmoore : public CreatureScript
 {
-public:
-    boss_admiral_proudmoore() : CreatureScript("boss_admiral_proudmoore") { }
+    public: boss_admiral_proudmoore() : CreatureScript("boss_admiral_proudmoore") { }
 
     struct boss_admiral_proudmooreAI : public BossAI
     {
-        boss_admiral_proudmooreAI(Creature* creature) : BossAI(creature, 0)
+        boss_admiral_proudmooreAI(Creature* creature) : BossAI(creature, DATA_ADMIRAL)
+        {
+            Initialize();
+        }
+
+        void Initialize()
         {
         }
 
@@ -77,9 +83,12 @@ public:
 
         void EnterCombat(Unit*)
         {
+            me->Yell("Combat start", LANG_UNIVERSAL, NULL);
             events.SetPhase(PHASE_ONE);
             events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000);
             events.ScheduleEvent(EVENT_SUMMON_ADDS, 10000, 0, PHASE_ONE);
+            World* map;
+            map->NewMaxVisibleDistanceInInstances(10.0f);
         }
 
         void KilledUnit(Unit*) override
@@ -88,6 +97,8 @@ public:
 
         void JustDied(Unit*) override
         {
+            World* map;
+            map->GetMaxVisibleDistanceInInstances();
         }
 
         void UpdateAI(uint32 diff) override
@@ -142,6 +153,10 @@ public:
 
             DoMeleeAttackIfReady();
         }
+
+    private:
+        uint8 tideStoneCount;
+        uint8 platformGrid[9];
     };
 
     CreatureAI* GetAI(Creature* creature) const override
