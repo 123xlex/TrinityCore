@@ -3468,7 +3468,7 @@ void World::RemoveOldCorpses()
 // Testing to reduce View Distance for Boss Fights
 void World::NewMaxVisibleDistanceInInstances(/*uint32 timer, */ float newDistance)
 {
-    m_MaxVisibleDistanceOnContinents = newDistance;
+    m_MaxVisibleDistanceInInstances = newDistance;
 }
 
 Realm realm;

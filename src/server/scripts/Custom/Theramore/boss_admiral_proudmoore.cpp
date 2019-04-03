@@ -1,8 +1,13 @@
 #include "ScriptMgr.h"
+#include "GameObject.h"
+#include "GameObjectAI.h"
+#include "InstanceScript.h"
+#include "ObjectAccessor.h"
+#include "MotionMaster.h"
 #include "ScriptedCreature.h"
-#include "Unit.h"
+#include "SpellInfo.h"
 #include "World.h"
-#include "custom_instance.h"
+#include "theramore.h"
 
 enum Npcs
 {
@@ -36,137 +41,161 @@ enum Events
 {
     // Admiral Proudmoore
     EVENT_FROSTBOLT_VOLLEY = 1,
-    EVENT_LIGHTNING_NOVA = 2,
-    EVENT_COLUMN_OF_FROST = 3,
-    EVENT_SUMMON_CYCLONE = 4,
-    EVENT_SUMMON_ADDS = 5,
+    EVENT_LIGHTNING_NOVA,
+    EVENT_COLUMN_OF_FROST,
+    EVENT_SUMMON_CYCLONE,
+    EVENT_SUMMON_ADDS,
 
     // Caster Add
-    EVENT_SUMMON_MINIWATER = 6,
-    EVENT_FROSTBOLT = 7,
+    EVENT_SUMMON_MINIWATER,
+    EVENT_FROSTBOLT,
 
     // Melee Add
-    EVENT_ENRAGE = 8,
+    EVENT_ENRAGE,
 
     // Water Ele
-    EVENT_WATER_WAVES = 9,
-    EVENT_ICE_TOMB = 10,
-
+    EVENT_WATER_WAVES,
+    EVENT_ICE_TOMB,
 };
 
 enum Phases
 {
     PHASE_ONE = 1,
-    PHASE_TWO = 2,
-    PHASE_THREE = 3,
+    PHASE_TWO,
+    PHASE_THREE,
 };
 
 class boss_admiral_proudmoore : public CreatureScript
 {
+public:
+        boss_admiral_proudmoore() : CreatureScript("boss_admiral_proudmoore") { }
+
+        struct boss_admiral_proudmooreAI : public BossAI
+        {
+            boss_admiral_proudmooreAI(Creature* creature) : BossAI(creature, BOSS_ADMIRAL)
+            {
+
+            }
+        };
+
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return GetTheramoreAI<boss_admiral_proudmooreAI>(creature);
+        }
+};
+
+void AddSC_boss_admiral_proudmoore()
+{
+    new boss_admiral_proudmoore();
+}
+
+/*
+class boss_admiral_proudmoore : public CreatureScript
+{
     public: boss_admiral_proudmoore() : CreatureScript("boss_admiral_proudmoore") { }
 
-    struct boss_admiral_proudmooreAI : public BossAI
-    {
-        boss_admiral_proudmooreAI(Creature* creature) : BossAI(creature, DATA_ADMIRAL)
+        struct boss_admiral_proudmooreAI : public ScriptedAI
         {
-            Initialize();
-        }
-
-        void Initialize()
-        {
-        }
-
-        void Reset() override
-        {
-            _Reset();
-        }
-
-        void EnterCombat(Unit*)
-        {
-            me->Yell("Combat start", LANG_UNIVERSAL, NULL);
-            events.SetPhase(PHASE_ONE);
-            events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000);
-            events.ScheduleEvent(EVENT_SUMMON_ADDS, 10000, 0, PHASE_ONE);
-            World* map;
-            map->NewMaxVisibleDistanceInInstances(10.0f);
-        }
-
-        void KilledUnit(Unit*) override
-        {
-        }
-
-        void JustDied(Unit*) override
-        {
-            World* map;
-            map->GetMaxVisibleDistanceInInstances();
-        }
-
-        void UpdateAI(uint32 diff) override
-        {
-            if (!UpdateVictim())
-                return;
-
-            events.Update(diff);
-
-            if (me->HasUnitState(UNIT_STATE_CASTING))
-                return;
-
-            if (events.IsInPhase(PHASE_ONE) && HealthBelowPct(65))
+            boss_admiral_proudmooreAI(Creature* creature) : ScriptedAI(creature)
             {
-                events.SetPhase(PHASE_TWO);
-                /*
-                events.ScheduleEvent(EVENT_WATER_WAVES, 7500, 0, PHASE_TWO);
-                events.ScheduleEvent(EVENT_COLUMN_OF_FROST, urand(10000, 12500), 0, PHASE_TWO);
-                */
-                me->SummonCreature(NPC_WATER_ELEMENTAL, me->GetHomePosition(), TEMPSUMMON_CORPSE_DESPAWN);
-                me->Yell("First Phase completed.", LANG_UNIVERSAL, NULL);
-                me->Yell("Hello", LANG_UNIVERSAL, NULL);
+                Initialize();                
             }
 
-            if (events.IsInPhase(PHASE_TWO) && HealthBelowPct(30))
+            void Initialize()
             {
-                events.SetPhase(PHASE_THREE);
-                events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000, 0, PHASE_THREE);
-                events.ScheduleEvent(EVENT_SUMMON_CYCLONE, 13000, 0, PHASE_THREE);
-                me->Yell("I've reached my final form!", LANG_UNIVERSAL, NULL);
             }
 
-            while (uint32 eventId = events.ExecuteEvent())
+            void Reset() override
             {
-                switch (eventId)
+                Initialize();
+            }
+
+            void EnterCombat(Unit*)
+            {
+                me->Yell("Combat start", LANG_UNIVERSAL, NULL);
+                events->SetPhase(PHASE_ONE);
+                events->ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000);
+                events->ScheduleEvent(EVENT_SUMMON_ADDS, 10000, 0, PHASE_ONE);
+                World* map;
+                map->NewMaxVisibleDistanceInInstances(10.0f);
+            }
+
+            void KilledUnit(Unit*) override
+            {
+            }
+
+            void JustDied(Unit*) override
+            {
+                World* map;
+                map->GetMaxVisibleDistanceInInstances();
+            }
+
+            void UpdateAI(uint32 diff) override
+            {
+                if (!UpdateVictim())
+                    return;
+
+                events->Update(diff);
+
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
+
+                if (events->IsInPhase(PHASE_ONE) && HealthBelowPct(65))
                 {
-                case EVENT_FROSTBOLT_VOLLEY:
-                    DoCastAOE(SPELL_FROSTBOLT_VOLLEY);
-                    events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, urand(12500, 17000));
-                    break;
-                case EVENT_SUMMON_ADDS:
-                    me->SummonCreature(NPC_CASTER_ADD, me->GetPositionX(), me->GetPositionY() + 10.0f, me->GetPositionZ(), me->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN);
-                    me->SummonCreature(NPC_MELEE_ADD, me->GetPositionX(), me->GetPositionY() - 10.0f, me->GetPositionZ(), me->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN);
-                    events.ScheduleEvent(EVENT_SUMMON_ADDS, 25000, 0, PHASE_ONE);
-                    break;
-                case EVENT_SUMMON_CYCLONE:
-                    break;
-                default:
-                    break;
+                    events->SetPhase(PHASE_TWO);
+                    events.ScheduleEvent(EVENT_WATER_WAVES, 7500, 0, PHASE_TWO);
+                    events.ScheduleEvent(EVENT_COLUMN_OF_FROST, urand(10000, 12500), 0, PHASE_TWO);
+                    me->SummonCreature(NPC_WATER_ELEMENTAL, me->GetHomePosition(), TEMPSUMMON_CORPSE_DESPAWN);
+                    me->Yell("First Phase completed.", LANG_UNIVERSAL, NULL);
+                    me->Yell("Hello", LANG_UNIVERSAL, NULL);
                 }
+
+                if (events->IsInPhase(PHASE_TWO) && HealthBelowPct(30))
+                {
+                    events->SetPhase(PHASE_THREE);
+                    events->ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 5000, 0, PHASE_THREE);
+                    events->ScheduleEvent(EVENT_SUMMON_CYCLONE, 13000, 0, PHASE_THREE);
+                    me->Yell("I've reached my final form!", LANG_UNIVERSAL, NULL);
+                }
+
+                while (uint32 eventId = events->ExecuteEvent())
+                {
+                    switch (eventId)
+                    {
+                    case EVENT_FROSTBOLT_VOLLEY:
+                        DoCastAOE(SPELL_FROSTBOLT_VOLLEY);
+                        events->ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, urand(12500, 17000));
+                        break;
+                    case EVENT_SUMMON_ADDS:
+                        me->SummonCreature(NPC_CASTER_ADD, me->GetPositionX(), me->GetPositionY() + 10.0f, me->GetPositionZ(), me->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN);
+                        me->SummonCreature(NPC_MELEE_ADD, me->GetPositionX(), me->GetPositionY() - 10.0f, me->GetPositionZ(), me->GetOrientation(), TEMPSUMMON_CORPSE_DESPAWN);
+                        events->ScheduleEvent(EVENT_SUMMON_ADDS, 25000, 0, PHASE_ONE);
+                        break;
+                    case EVENT_SUMMON_CYCLONE:
+                        break;
+                    default:
+                        break;
+                    }
+                }
+
+                DoMeleeAttackIfReady();
             }
 
-            DoMeleeAttackIfReady();
+        private:
+            EventMap* events;
+            uint8 tideStoneCount;
+            uint8 platformGrid[9];
+        };
+
+        CreatureAI* GetAI(Creature* creature) const override
+        {
+            return new boss_admiral_proudmooreAI(creature);
         }
-
-    private:
-        uint8 tideStoneCount;
-        uint8 platformGrid[9];
-    };
-
-    CreatureAI* GetAI(Creature* creature) const override
-    {
-        return new boss_admiral_proudmooreAI(creature);
-    }
-
 };
 
 void AddSC_admiral_proudmoore()
 {
     new boss_admiral_proudmoore();
 }
+
+*/

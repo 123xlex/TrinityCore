@@ -16,13 +16,15 @@
  */
 
 // This is where scripts' loading functions should be declared:
-void AddSC_admiral_proudmoore();
+void AddSC_instance_theramore();
+void AddSC_boss_admiral_proudmoore();
 void AddSC_npc_multi_purpose();
 
 // The name of this function should match:
 // void Add${NameOfDirectory}Scripts()
 void AddCustomScripts()
 {
-    AddSC_admiral_proudmoore();
+    AddSC_instance_theramore();
+    AddSC_boss_admiral_proudmoore();
     AddSC_npc_multi_purpose();
 }
