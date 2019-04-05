@@ -76,6 +76,77 @@ public:
             {
 
             }
+
+
+            void Reset() override
+            {
+                _Reset();
+                tideStoneCount = 0;
+                gridField[9];
+            }
+
+            void JustEngagedWith(Unit* /*who*/) override
+            {
+                _JustEngagedWith();
+                events.ScheduleEvent(EVENT_ENRAGE, 5s, 0, PHASE_ONE);
+                setPhase(PHASE_ONE);
+            }
+
+            void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/) override
+            {
+                if (events.IsInPhase(PHASE_ONE) && HealthBelowPct(66))
+                {
+                    setPhase(PHASE_TWO);
+                    me->Yell("Just reached Phase 2", LANG_UNIVERSAL, NULL);
+                }
+
+                if (events.IsInPhase(PHASE_TWO) && HealthBelowPct(33))
+                {
+                    setPhase(PHASE_THREE);
+                    me->Yell("Just reached Phase 3", LANG_UNIVERSAL, NULL);
+                }
+            }
+
+            void JustDied(Unit* /*killer*/) override
+            {
+                _JustDied();
+            }
+
+            void UpdateAI(uint32 diff) override
+            {
+                if (!UpdateVictim())
+                    return;
+
+                events.Update(diff);
+
+                if (me->HasUnitState(UNIT_STATE_CASTING))
+                    return;
+
+                while (uint32 eventID = events.ExecuteEvent())
+                {
+                    switch (eventID)
+                    {
+                    case EVENT_ENRAGE:
+                        me->Yell("Just got this string", LANG_UNIVERSAL, NULL);
+                        break;
+                    default:
+                        break;
+                    }
+
+                }
+
+                DoMeleeAttackIfReady();
+            }
+        private:
+            void setPhase(Phases newPhase)
+            {
+                _phase = newPhase;
+                events.SetPhase(newPhase);
+            }
+
+            uint8 tideStoneCount;
+            Phases _phase;
+            uint8 gridField[9];
         };
 
         CreatureAI* GetAI(Creature* creature) const override
