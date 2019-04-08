@@ -4,6 +4,8 @@
 #include "InstanceScript.h"
 #include "ObjectAccessor.h"
 #include "MotionMaster.h"
+#include "MoveSpline.h"
+#include "MoveSplineInit.h"
 #include "ScriptedCreature.h"
 #include "SpellInfo.h"
 #include "World.h"
@@ -33,7 +35,7 @@ enum Spells
 
     // Water Ele
     SPELL_WATER_WAVES = 67890,
-    SPELL_ICE_TOMB = 56789,
+    SPELL_ICE_TOMB = 69712
 
 };
 
@@ -63,7 +65,18 @@ enum Phases
     PHASE_ONE = 1,
     PHASE_TWO,
     PHASE_THREE,
+    PHASE_ALL
 };
+
+Position const tideStoneSpawn[3] =
+{
+    {10.0f, 20.0f, 30.0f, 40.0f},
+    {10.0f, 20.0f, 30.0f, 40.0f},
+    {10.0f, 20.0f, 30.0f, 40.0f},
+};
+
+Position const centerPlatform  = { 327.830627f, 540.413696f, 25.454988f, 3.125883f };
+Position const hoverPoint      = { 10.0f, 20.0f, 30.0f, 40.0f };
 
 class boss_admiral_proudmoore : public CreatureScript
 {
@@ -77,18 +90,22 @@ public:
 
             }
 
+            void InitializeAI() override
+            {
+                
+            }
 
             void Reset() override
             {
                 _Reset();
                 tideStoneCount = 0;
-                gridField[9];
             }
 
             void JustEngagedWith(Unit* /*who*/) override
             {
                 _JustEngagedWith();
                 events.ScheduleEvent(EVENT_ENRAGE, 5s, 0, PHASE_ONE);
+                events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 10s, 0, PHASE_ONE);
                 setPhase(PHASE_ONE);
             }
 
@@ -98,6 +115,17 @@ public:
                 {
                     setPhase(PHASE_TWO);
                     me->Yell("Just reached Phase 2", LANG_UNIVERSAL, NULL);
+                    std::list<Player*> players;
+                    if (players.size() > 1)
+                    {
+                        for (std::list<Player*>::iterator itr = players.begin(); itr != players.end(); itr++)
+                        {
+                            Player* player;
+                            player->AddAura(SPELL_AURA_MOD_ROOT, player);
+                            DoCast(*itr, SPELL_ICE_TOMB);
+                        }
+                    }
+                    me->GetMotionMaster()->MovePoint(0, centerPlatform, false);
                 }
 
                 if (events.IsInPhase(PHASE_TWO) && HealthBelowPct(33))
@@ -126,6 +154,10 @@ public:
                 {
                     switch (eventID)
                     {
+                    case EVENT_FROSTBOLT_VOLLEY:
+                        DoCastAOE(SPELL_FROSTBOLT_VOLLEY);
+                        events.RescheduleEvent(EVENT_FROSTBOLT_VOLLEY, Seconds(5), Seconds(10), 0, PHASE_ONE);
+                        break;
                     case EVENT_ENRAGE:
                         me->Yell("Just got this string", LANG_UNIVERSAL, NULL);
                         break;
@@ -146,7 +178,6 @@ public:
 
             uint8 tideStoneCount;
             Phases _phase;
-            uint8 gridField[9];
         };
 
         CreatureAI* GetAI(Creature* creature) const override
