@@ -1,14 +1,17 @@
-#include "ScriptMgr.h"
-#include "GameObject.h"
-#include "GameObjectAI.h"
+#include "CommonHelpers.h"
+#include "Containers.h"
+#include "GridNotifiers.h"
 #include "InstanceScript.h"
-#include "ObjectAccessor.h"
+#include "Map.h"
 #include "MotionMaster.h"
-#include "MoveSpline.h"
-#include "MoveSplineInit.h"
+#include "ObjectAccessor.h"
+#include "ObjectMgr.h"
 #include "ScriptedCreature.h"
-#include "SpellInfo.h"
-#include "World.h"
+#include "ScriptMgr.h"
+#include "SpellAuraEffects.h"
+#include "SpellMgr.h"
+#include "SpellScript.h"
+#include "TemporarySummon.h"
 #include "theramore.h"
 
 enum Npcs
@@ -35,7 +38,12 @@ enum Spells
 
     // Water Ele
     SPELL_WATER_WAVES = 67890,
-    SPELL_ICE_TOMB = 69712
+    SPELL_ICE_TOMB = 69712,
+
+    SPELL_ROOT = 42716,
+    SPELL_ICE_TOMB_DAMAGE = 70157,
+    SPELL_ICE_TOMB_DUMMY = 69675,
+    SPELL_ICE_TOMB_UNTARGETABLE = 69700
 
 };
 
@@ -57,13 +65,15 @@ enum Events
 
     // Water Ele
     EVENT_WATER_WAVES,
-    EVENT_ICE_TOMB,
+    EVENT_ICE_TOMB_REMOVAL
 };
 
 enum Phases
 {
     PHASE_ONE = 1,
+    PHASE_TRANSITION_1,
     PHASE_TWO,
+    PHASE_TRANSITION_2,
     PHASE_THREE,
     PHASE_ALL
 };
@@ -76,7 +86,7 @@ Position const tideStoneSpawn[3] =
 };
 
 Position const centerPlatform  = { 327.830627f, 540.413696f, 25.454988f, 3.125883f };
-Position const hoverPoint      = { 10.0f, 20.0f, 30.0f, 40.0f };
+Position const hoverPoint      = { 327.830627f, 540.413696f, 35.454988f, 3.125883f };
 
 class boss_admiral_proudmoore : public CreatureScript
 {
@@ -99,6 +109,58 @@ public:
             {
                 _Reset();
                 tideStoneCount = 0;
+                instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICE_TOMB_DAMAGE);
+                me->SetReactState(REACT_DEFENSIVE);
+                me->SetSpeed(MOVE_RUN, 5.0f);
+                /*
+                std::list<Player*> player;
+                me->GetPlayerListInGrid(player, 300.0f);
+                for each (Player* itr in player)
+                {
+                    itr->RemoveAura(SPELL_ICE_TOMB_DAMAGE);
+                }
+                */
+            }
+
+            void TransitionPhase(uint8 Phase)
+            {
+                me->Yell("Just reached Transition Phase", LANG_UNIVERSAL, NULL);
+                std::list<Unit*> targets;
+                SelectTargetList(targets, 10, SELECT_TARGET_RANDOM, 0.0f, 0.0f, true, true, -SPELL_ICE_TOMB_DAMAGE);
+                {
+                    me->Yell("Created the List", LANG_UNIVERSAL, NULL);
+                    if (!targets.empty())
+                    {
+                        me->Yell("Found entries in the list", LANG_UNIVERSAL, NULL);
+                        for (std::list<Unit*>::iterator itr = targets.begin(); itr != targets.end(); itr++)
+                        {
+                            me->Yell("Adding Root to player number", LANG_UNIVERSAL, NULL);
+                            DoCast(*itr, SPELL_ICE_TOMB_DAMAGE);
+                        }
+                    }
+                }
+
+                switch (Phase)
+                {
+                    case PHASE_ONE:
+                        me->SetReactState(REACT_PASSIVE);
+                        me->SetSpeedRate(MOVE_RUN, 3.0f);
+                        me->NearTeleportTo(centerPlatform);
+                        me->SetFacingTo(3.132854f);
+                        setPhase(PHASE_TRANSITION_1);
+                        events.ScheduleEvent(EVENT_ICE_TOMB_REMOVAL, 5s, 0, PHASE_TRANSITION_1);
+                        break;
+                    case PHASE_TWO:
+                        me->SetReactState(REACT_PASSIVE);
+                        me->SetSpeedRate(MOVE_RUN, 3.0f);
+                        me->NearTeleportTo(centerPlatform);
+                        me->SetFacingTo(3.132854f);
+                        setPhase(PHASE_TRANSITION_2);
+                        events.ScheduleEvent(EVENT_ICE_TOMB_REMOVAL, 5s, 0, PHASE_TRANSITION_2);
+                        break;
+                    default:
+                        break;
+                }
             }
 
             void JustEngagedWith(Unit* /*who*/) override
@@ -107,30 +169,20 @@ public:
                 events.ScheduleEvent(EVENT_ENRAGE, 5s, 0, PHASE_ONE);
                 events.ScheduleEvent(EVENT_FROSTBOLT_VOLLEY, 10s, 0, PHASE_ONE);
                 setPhase(PHASE_ONE);
+                DoZoneInCombat(me);
             }
 
             void DamageTaken(Unit* /*attacker*/, uint32& /*damage*/) override
             {
                 if (events.IsInPhase(PHASE_ONE) && HealthBelowPct(66))
                 {
-                    setPhase(PHASE_TWO);
-                    me->Yell("Just reached Phase 2", LANG_UNIVERSAL, NULL);
-                    std::list<Player*> players;
-                    if (players.size() > 1)
-                    {
-                        for (std::list<Player*>::iterator itr = players.begin(); itr != players.end(); itr++)
-                        {
-                            Player* player;
-                            player->AddAura(SPELL_AURA_MOD_ROOT, player);
-                            DoCast(*itr, SPELL_ICE_TOMB);
-                        }
-                    }
-                    me->GetMotionMaster()->MovePoint(0, centerPlatform, false);
+                    TransitionPhase(PHASE_ONE);
+                    me->Yell("Setting Phase to Phase 2", LANG_UNIVERSAL, NULL);
                 }
 
                 if (events.IsInPhase(PHASE_TWO) && HealthBelowPct(33))
                 {
-                    setPhase(PHASE_THREE);
+                    TransitionPhase(PHASE_TWO);
                     me->Yell("Just reached Phase 3", LANG_UNIVERSAL, NULL);
                 }
             }
@@ -157,6 +209,10 @@ public:
                     case EVENT_FROSTBOLT_VOLLEY:
                         DoCastAOE(SPELL_FROSTBOLT_VOLLEY);
                         events.RescheduleEvent(EVENT_FROSTBOLT_VOLLEY, Seconds(5), Seconds(10), 0, PHASE_ONE);
+                        break;
+                    case EVENT_ICE_TOMB_REMOVAL:
+                        instance->DoRemoveAurasDueToSpellOnPlayers(SPELL_ICE_TOMB_DAMAGE);
+                        setPhase(PHASE_TWO);
                         break;
                     case EVENT_ENRAGE:
                         me->Yell("Just got this string", LANG_UNIVERSAL, NULL);
