@@ -16,41 +16,40 @@
 
 enum Npcs
 {
-    NPC_CASTER_ADD = 99998,
-    NPC_MELEE_ADD = 99997,
-    NPC_WATER_ELEMENTAL = 99995,
-    NPC_MINI_WATER_ELEMENTAL = 45678,
+    NPC_CASTER_ADD              = 99998,
+    NPC_MELEE_ADD               = 99997,
+    NPC_WATER_ELEMENTAL         = 99995,
+    NPC_MINI_WATER_ELEMENTAL    = 45678,
 };
 
 enum Spells
 {
     // Admiral Proudmoore
-    SPELL_FROSTBOLT_VOLLEY = 72905,
-    SPELL_LIGHTNING_NOVA = 23456,
-    SPELL_COLUMN_OF_FROST = 56789,
-    SPELL_WATER_CYCLONE = 38497,
+    SPELL_FROSTBOLT_VOLLEY      = 72905,
+    SPELL_LIGHTNING_NOVA        = 23456,
+    SPELL_COLUMN_OF_FROST       = 56789,
+    SPELL_WATER_CYCLONE         = 38497,
 
     // Caster Add
-    SPELL_FROSTBOLT = 34567,
+    SPELL_FROSTBOLT             = 34567,
 
     // Melee Add
-    SPELL_ENRAGE = 45678,
+    SPELL_ENRAGE                = 45678,
 
     // Water Ele
-    SPELL_WATER_WAVES = 67890,
-    SPELL_ICE_TOMB = 69712,
-
-    SPELL_ROOT = 42716,
-    SPELL_ICE_TOMB_DAMAGE = 70157,
-    SPELL_ICE_TOMB_DUMMY = 69675,
-    SPELL_ICE_TOMB_UNTARGETABLE = 69700
+    SPELL_WATER_WAVES           = 67890,
+    
+    SPELL_FROST_BEACON          = 70126,
+    SPELL_ICE_TOMB_TARGET       = 69712,
+    SPELL_ICE_TOMB_DUMMY        = 69675,
+    SPELL_ICE_TOMB_DAMAGE       = 70157
 
 };
 
 enum Events
 {
     // Admiral Proudmoore
-    EVENT_FROSTBOLT_VOLLEY = 1,
+    EVENT_FROSTBOLT_VOLLEY      = 1,
     EVENT_LIGHTNING_NOVA,
     EVENT_COLUMN_OF_FROST,
     EVENT_SUMMON_CYCLONE,
@@ -70,12 +69,11 @@ enum Events
 
 enum Phases
 {
-    PHASE_ONE = 1,
+    PHASE_ONE                 = 1,
     PHASE_TRANSITION_1,
     PHASE_TWO,
     PHASE_TRANSITION_2,
     PHASE_THREE,
-    PHASE_ALL
 };
 
 Position const tideStoneSpawn[3] =
