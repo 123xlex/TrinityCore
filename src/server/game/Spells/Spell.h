@@ -415,7 +415,7 @@ class TC_GAME_API Spell
 
         GameObject* SearchSpellFocus();
 
-        void prepare(SpellCastTargets const& targets, AuraEffect const* triggeredByAura = nullptr);
+        SpellCastResult prepare(SpellCastTargets const& targets, AuraEffect const* triggeredByAura = nullptr);
         void cancel();
         void update(uint32 difftime);
         void cast(bool skipCheck = false);
@@ -635,7 +635,7 @@ class TC_GAME_API Spell
         uint32 m_procAttacker;                // Attacker trigger flags
         uint32 m_procVictim;                  // Victim   trigger flags
         uint32 m_hitMask;
-        void   prepareDataForTriggerSystem();
+        void prepareDataForTriggerSystem();
 
         // *****************************************
         // Spell target subsystem
@@ -765,6 +765,7 @@ class TC_GAME_API Spell
 
         // effect helpers
         void SummonGuardian(uint32 i, uint32 entry, SummonPropertiesEntry const* properties, uint32 numSummons);
+        void CalculateJumpSpeeds(SpellInfo const* spellInfo, uint8 i, float dist, float& speedXY, float& speedZ);
 
         SpellCastResult CanOpenLock(uint32 effIndex, uint32 lockid, SkillType& skillid, int32& reqSkillValue, int32& skillValue);
         // -------------------------------------------
