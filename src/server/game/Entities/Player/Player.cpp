@@ -2307,6 +2307,10 @@ GameObject* Player::GetGameObjectIfCanInteractWith(ObjectGuid const& guid) const
     if (!go)
         return nullptr;
 
+    // Players cannot interact with gameobjects that use the "Point" icon
+    if (go->GetGOInfo()->IconName == "Point")
+        return nullptr;
+
     if (!go->IsWithinDistInMap(this))
         return nullptr;
 
@@ -14806,11 +14810,11 @@ bool Player::CanRewardQuest(Quest const* quest, bool msg)
         return false;
 
     // daily quest can't be rewarded (25 daily quest already completed)
-    if (!SatisfyQuestDay(quest, true) || !SatisfyQuestWeek(quest, true) || !SatisfyQuestMonth(quest, true) || !SatisfyQuestSeasonal(quest, true))
+    if (!SatisfyQuestDay(quest, msg) || !SatisfyQuestWeek(quest, msg) || !SatisfyQuestMonth(quest, msg) || !SatisfyQuestSeasonal(quest, msg))
         return false;
 
     // player no longer satisfies the quest's requirements (skill level etc.)
-    if (!SatisfyQuestLevel(quest, true) || !SatisfyQuestSkill(quest, true) || !SatisfyQuestReputation(quest, true))
+    if (!SatisfyQuestLevel(quest, msg) || !SatisfyQuestSkill(quest, msg) || !SatisfyQuestReputation(quest, msg))
         return false;
 
     // rewarded and not repeatable quest (only cheating case, then ignore without message)
@@ -16271,7 +16275,6 @@ void Player::ItemAddedQuestCheck(uint32 entry, uint32 count)
                     CompleteQuest(questid);
                 else if (q_status.ItemCount[j] == reqitemcount) // Send quest update when an objective is completed
                     UpdateVisibleGameobjectsOrSpellClicks();
-                return;
             }
         }
     }
@@ -18692,12 +18695,10 @@ void Player::_LoadGroup(PreparedQueryResult result)
 
             uint8 subgroup = group->GetMemberGroup(GetGUID());
             SetGroup(group, subgroup);
-            if (GetLevel() >= LEVELREQUIREMENT_HEROIC)
-            {
-                // the group leader may change the instance difficulty while the player is offline
-                SetDungeonDifficulty(group->GetDungeonDifficulty());
-                SetRaidDifficulty(group->GetRaidDifficulty());
-            }
+
+            // Make sure the player's difficulty settings are always aligned with the group's settings in order to avoid issues when checking access requirements
+            SetDungeonDifficulty(group->GetDungeonDifficulty());
+            SetRaidDifficulty(group->GetRaidDifficulty());
         }
     }
 
@@ -24550,41 +24551,50 @@ void Player::RemoveRunesByAuraEffect(AuraEffect const* aura)
 
 void Player::RestoreBaseRune(uint8 index)
 {
+    std::vector<AuraEffect const*> removeList;
     std::unordered_set<AuraEffect const*>& auras = m_runes->runes[index].ConvertAuras;
 
-    AuraEffect const* aura = nullptr;
-    for (auto itr = auras.begin(); itr != auras.end() && !aura;)
+    auto criteria = [&removeList](AuraEffect const* storedAura) -> bool
     {
-        if (AuraEffect const* temp = *itr)
+        // AuraEffect already gone
+        if (!storedAura)
+            return true;
+
+        if (storedAura->GetSpellInfo()->HasAttribute(SPELL_ATTR0_PASSIVE))
         {
-            if (temp->GetSpellInfo()->HasAttribute(SPELL_ATTR0_PASSIVE))
-            {
-                aura = temp;
-                auras.erase(itr);
-            }
-            else
-                ++itr;
+            // Don't drop passive talents providing rune conversion
+            if (storedAura->GetAuraType() == SPELL_AURA_CONVERT_RUNE)
+                removeList.push_back(storedAura);
+            return true;
         }
-        else
-            itr = auras.erase(itr);
-    }
+
+        // If rune was converted by a non-passive aura that is still active we should keep it converted
+        return false;
+    };
+
+    Trinity::Containers::EraseIf(auras, criteria);
 
     if (!auras.empty())
         return;
 
     ConvertRune(index, GetBaseRune(index));
 
-    // Don't drop passive talents providing rune convertion
-    if (!aura || aura->GetAuraType() != SPELL_AURA_CONVERT_RUNE)
+    if (removeList.empty())
         return;
 
-    for (uint8 itr = 0; itr < MAX_RUNES; ++itr)
+    // Filter auras set to be removed if they are converting any other rune index
+    for (AuraEffect const* storedAura : removeList)
     {
-        if (m_runes->runes[itr].ConvertAuras.find(aura) != m_runes->runes[itr].ConvertAuras.end())
-            return;
-    }
+        uint8 itr = 0;
+        for (; itr < MAX_RUNES; ++itr)
+        {
+            if (m_runes->runes[itr].ConvertAuras.find(storedAura) != m_runes->runes[itr].ConvertAuras.end())
+                break;
+        }
 
-    aura->GetBase()->Remove();
+        if (itr == MAX_RUNES)
+            storedAura->GetBase()->Remove();
+    }
 }
 
 void Player::ConvertRune(uint8 index, RuneType newType)
@@ -26561,6 +26571,14 @@ Pet* Player::SummonPet(uint32 entry, float x, float y, float z, float ang, PetTy
 
         if (duration > 0)
             pet->SetDuration(duration);
+
+        // Generate a new name for the newly summoned ghoul
+        if (pet->IsPetGhoul())
+        {
+            std::string new_name = sObjectMgr->GeneratePetName(entry);
+            if (!new_name.empty())
+                pet->SetName(new_name);
+        }
 
         return nullptr;
     }

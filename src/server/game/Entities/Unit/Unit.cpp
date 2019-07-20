@@ -5863,11 +5863,7 @@ void Unit::SetMinion(Minion *minion, bool apply)
         }
 
         if (minion->HasUnitTypeMask(UNIT_MASK_CONTROLABLE_GUARDIAN))
-        {
-            if (AddGuidValue(UNIT_FIELD_SUMMON, minion->GetGUID()))
-            {
-            }
-        }
+            AddGuidValue(UNIT_FIELD_SUMMON, minion->GetGUID());
 
         if (minion->m_Properties && minion->m_Properties->Type == SUMMON_TYPE_MINIPET)
             SetCritterGUID(minion->GetGUID());
@@ -13530,6 +13526,7 @@ std::string Unit::GetDebugInfo() const
         << std::boolalpha
         << "IsAIEnabled: " << IsAIEnabled() << " DeathState: " << std::to_string(getDeathState())
         << " UnitMovementFlags: " << GetUnitMovementFlags() << " ExtraUnitMovementFlags: " << GetExtraUnitMovementFlags()
-        << " Class: " << std::to_string(GetClass());
+        << " Class: " << std::to_string(GetClass()) << "\n"
+        << " " << (movespline ? movespline->ToString() : "Movespline: <none>");
     return sstr.str();
 }

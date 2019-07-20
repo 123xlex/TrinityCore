@@ -114,6 +114,30 @@ CREATE TABLE `addons` (
 
 LOCK TABLES `addons` WRITE;
 /*!40000 ALTER TABLE `addons` DISABLE KEYS */;
+INSERT INTO `addons` VALUES
+('Blizzard_AchievementUI', 1276933997),
+('Blizzard_ArenaUI', 1276933997),
+('Blizzard_AuctionUI', 1276933997),
+('Blizzard_BarbershopUI', 1276933997),
+('Blizzard_BattlefieldMinimap', 1276933997),
+('Blizzard_BindingUI', 1276933997),
+('Blizzard_Calendar', 1276933997),
+('Blizzard_CombatLog', 1276933997),
+('Blizzard_CombatText', 1276933997),
+('Blizzard_DebugTools', 1276933997),
+('Blizzard_GlyphUI', 1276933997),
+('Blizzard_GMChatUI', 1276933997),
+('Blizzard_GMSurveyUI', 1276933997),
+('Blizzard_GuildBankUI', 1276933997),
+('Blizzard_InspectUI', 1276933997),
+('Blizzard_ItemSocketingUI', 1276933997),
+('Blizzard_MacroUI', 1276933997),
+('Blizzard_RaidUI', 1276933997),
+('Blizzard_TalentUI', 1276933997),
+('Blizzard_TimeManager', 1276933997),
+('Blizzard_TokenUI', 1276933997),
+('Blizzard_TradeSkillUI', 1276933997),
+('Blizzard_TrainerUI', 1276933997);
 /*!40000 ALTER TABLE `addons` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2609,7 +2633,10 @@ INSERT INTO `updates` VALUES
 ('2019_05_15_00_characters.sql','A12F21C8044C8BC8E2AA17F4C6CEB8B722CBC714','ARCHIVED','2019-05-15 06:13:20',0),
 ('2019_06_15_00_characters.sql','32DA6E004D7DD6EFFB0BB26238D17F6CC9E51DE6','ARCHIVED','2019-06-15 07:33:45',0),
 ('2019_07_14_00_characters.sql','A141F4F15BDF0320483921429871D4C572BD7E2D','ARCHIVED','2019-07-04 00:00:00',0),
-('2019_07_15_00_characters.sql','5BCF35896BB36A306CE79CF1E3F1945FAF9019D9','ARCHIVED','2019-07-15 05:57:41',4);
+('2019_07_15_00_characters.sql','5BCF35896BB36A306CE79CF1E3F1945FAF9019D9','ARCHIVED','2019-07-15 00:00:00',0),
+('2019_07_15_01_characters.sql','5D383B026AB9EDE7114F249D206DE7E432E19468','ARCHIVED','2019-07-15 00:00:00',0),
+('2019_07_16_00_characters.sql','76AE193EFA3129FA1702BF7B6FA7C4127B543BDF','ARCHIVED','2019-07-16 00:00:00',0);
+
 /*!40000 ALTER TABLE `updates` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -2758,11 +2785,12 @@ INSERT INTO `worldstates` VALUES
 (3801,0,NULL),
 (3802,1,NULL),
 (20001,0,'NextArenaPointDistributionTime'),
-(20002,1477230266,'NextWeeklyQuestResetTime'),
-(20003,1476680400,'NextBGRandomDailyResetTime'),
+(20002,0,'NextWeeklyQuestResetTime'),
+(20003,0,'NextBGRandomDailyResetTime'),
 (20004,0,'cleaning_flags'),
-(20006,1476680400,NULL),
-(20007,1477954800,NULL);
+(20006,0,'NextGuildDailyResetTime'),
+(20007,0,'NextMonthlyQuestResetTime'),
+(20008,0,'NextDailyQuestResetTime');
 /*!40000 ALTER TABLE `worldstates` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
