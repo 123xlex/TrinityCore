@@ -93,6 +93,7 @@ enum Spells
     SPELL_SHADOW_TRAP                   = 73539,
     SPELL_SHADOW_TRAP_AURA              = 73525,
     SPELL_SHADOW_TRAP_KNOCKBACK         = 73529,
+    SPELL_SHADOW_TRAP_VISUAL            = 73530,
 
     // Phase Transition
     SPELL_REMORSELESS_WINTER_1          = 68981,
@@ -366,7 +367,7 @@ enum Misc
     DATA_VILE                   = 45814622
 };
 
-class NecroticPlagueTargetCheck : public std::unary_function<Unit*, bool>
+class NecroticPlagueTargetCheck
 {
     public:
         NecroticPlagueTargetCheck(Unit const* obj, uint32 notAura1 = 0, uint32 notAura2 = 0)
@@ -741,6 +742,9 @@ class boss_the_lich_king : public CreatureScript
                         summon->SetReactState(REACT_PASSIVE);
                         summon->HandleEmoteCommand(EMOTE_ONESHOT_EMERGE);
                         summon->m_Events.AddEvent(new LichKingStartMovementEvent(me, summon), summon->m_Events.CalculateTime(5000));
+                        break;
+                    case NPC_SHADOW_TRAP:
+                        summon->CastSpell(summon, SPELL_SHADOW_TRAP_VISUAL, true);
                         break;
                     case NPC_ICE_SPHERE:
                     {
